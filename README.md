@@ -34,7 +34,6 @@ Copy the container ID (let us suppose it is `78bdc7c38626`) and copy the generat
 sudo docker cp 78bdc7c38626:/app/build/build-buildroot-esp32s3/images/ .
 sudo docker cp 78bdc7c38626:/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/network_adapter.bin ./images
 sudo docker cp 78bdc7c38626:/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/bootloader/bootloader.bin ./images
-sudo docker cp 78bdc7c38626:/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/partition_table/partition_table.bin ./images
 sudo docker cp 78bdc7c38626:/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/partition_table/partition-table.bin ./images
 ```
 
