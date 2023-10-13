@@ -1,6 +1,6 @@
-# Build the ESP32 Linux Kernel
+# Build the ESP32-S3 Linux Kernel
 
-Based on the [Max Filippov ESP32 Kernel Linux Build Scripts](https://github.com/jcmvbkbc/esp32-linux-build) and the [Antonio Docker Container](https://github.com/hpsaturn/esp32s3-linux) with a few modifications to make it work for me.
+Based on the [Max Filippov ESP32-S3 Kernel Linux Build Scripts](https://github.com/jcmvbkbc/esp32-linux-build) and the [Antonio Docker Container](https://github.com/hpsaturn/esp32s3-linux) with a few modifications to make it work for me.
 
 You will need:
 
@@ -39,7 +39,7 @@ sudo docker cp 78bdc7c38626:/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/n
 
 You may now delete the docker image and container, you won't need it anymore (if you don't want to cross compile any application).
 
-## Flash Inscrutions
+## Flash Instructions
 
 Activate `esp-idf` environment wherever it have been installed, I will suppose it is installed in `/opt/esp-idf`:
 
