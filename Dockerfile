@@ -68,7 +68,7 @@ RUN cd build && \
 
 # keep docker running so we can debug/rebuild :)
 USER root
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+CMD ["sh"]
 
 #
 # flash
