@@ -18,9 +18,9 @@ RUN curl -O https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
     ln -s /usr/bin/python3 /usr/bin/python
 
 # Install virtualenv using pip
-RUN python -m ensurepip && \
-    python -m pip install --upgrade pip && \
-    python -m pip install virtualenv
+RUN python3 -m ensurepip && \
+    python3 -m pip install --upgrade pip && \
+    python3 -m pip install virtualenv
 
 WORKDIR /app
 
