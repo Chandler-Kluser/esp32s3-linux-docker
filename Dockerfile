@@ -1,12 +1,26 @@
 # Dockerfile port of https://gist.github.com/jcmvbkbc/316e6da728021c8ff670a24e674a35e6
 # wifi details http://wiki.osll.ru/doku.php/etc:users:jcmvbkbc:linux-xtensa:esp32s3wifi
+# Modified by Chandler Klüser
 
-# we need python 3.10 not 3.11
-FROM ubuntu:22.04
+FROM archlinux:latest
 
-RUN apt-get update
-RUN apt-get -y install gperf bison flex texinfo help2man gawk libtool-bin git unzip ncurses-dev rsync zlib1g zlib1g-dev xz-utils cmake wget bzip2 g++ python3 python3-dev python3-pip cpio bc virtualenv libusb-1.0 && \
+# Package Update + Installation
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm base-devel git unzip rsync gcc make cmake wget bzip2 cpio bc gperf bison flex texinfo help2man gawk openssl zlib ncurses
+
+# Python 3.10 required, not 3.11
+RUN curl -O https://www.python.org/ftp/python/3.10.0/Python-3.10.0.tgz && \
+    tar -xf Python-3.10.0.tgz && \
+    cd Python-3.10.0 && \
+    ./configure && \
+    make && \
+    make install && \
     ln -s /usr/bin/python3 /usr/bin/python
+
+# Install virtualenv using pip
+RUN python -m ensurepip && \
+    python -m pip install --upgrade pip && \
+    python -m pip install virtualenv
 
 WORKDIR /app
 
@@ -81,3 +95,16 @@ CMD ["sh"]
 # parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name linux  --input xipImage
 # parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name rootfs --input rootfs.cramfs
 # parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name etc --input etc.jffs2
+
+# Second Method - Running inside container
+
+# run container from image:
+# sudo docker run --device=/dev/ttyACM0 -it esp32s3-linux
+
+# Download Tools for ESP32S3 Flashing
+# /app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/esp-idf/install.sh
+# esptool.py --chip esp32s3 -p /dev/ttyACM0 -b 921600 --before=default_reset --after=hard_reset write_flash 0x0 ./build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/bootloader/bootloader.bin 0x10000 ./build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/network_adapter.bin 0x8000 ./build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/partition_table/partition-table.bin
+
+# parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name linux  --input ./build/build-buildroot-esp32s3/images/xipImage
+# parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name rootfs --input ./build/build-buildroot-esp32s3/images/rootfs.cramfs
+# parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name etc --input ./build/build-buildroot-esp32s3/images/etc.jffs2
