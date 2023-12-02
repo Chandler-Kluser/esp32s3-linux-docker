@@ -4,6 +4,9 @@
 
 FROM archlinux:latest
 
+# Update GPG Signatures before system update
+RUN pacman-key --refresh-keys
+
 # Package Update + Installation
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm base-devel git unzip rsync gcc make cmake wget bzip2 cpio bc gperf bison flex texinfo help2man gawk openssl zlib ncurses
