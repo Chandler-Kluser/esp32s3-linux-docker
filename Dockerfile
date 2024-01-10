@@ -5,7 +5,8 @@
 FROM archlinux:latest
 
 # Update GPG Signatures before system update
-RUN pacman-key --refresh-keys
+RUN pacman-key --refresh-keys && \
+    pacman-key --init
 
 # Package Update + Installation
 RUN pacman -Syu --noconfirm && \
