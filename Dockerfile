@@ -39,9 +39,12 @@ ENV PATH="$PATH:/app/autoconf-2.71/root/bin"
 
 # dynconfig
 RUN git clone https://github.com/jcmvbkbc/xtensa-dynconfig -b original --depth=1 && \
-    git clone https://github.com/jcmvbkbc/config-esp32s3 esp32s3 --depth=1 && \
-    make -C xtensa-dynconfig ORIG=1 CONF_DIR=`pwd` esp32s3.so
-ENV XTENSA_GNU_CONFIG="/app/xtensa-dynconfig/esp32s3.so"
+    wget https://github.com/jcmvbkbc/xtensa-toolchain-build/raw/e46089b8418f27ecd895881f071aa192dd7f42b5/overlays/original/esp32.tar.gz && \
+    mkdir esp32 && \
+    tar -xf esp32.tar.gz -C esp32 && \
+    sed -i 's/\(XSHAL_ABI\s\+\)XTHAL_ABI_WINDOWED/\1XTHAL_ABI_CALL0/' esp32/{binutils,gcc}/xtensa-config.h && \
+    make -C xtensa-dynconfig ORIG=1 CONF_DIR=`pwd` esp32.so
+ENV XTENSA_GNU_CONFIG="/app/xtensa-dynconfig/esp32.so"
 
 # ct-ng cannot run as root, we'll just do everything else as a user
 RUN useradd -d /app/build -u 3232 esp32 && mkdir build && chown esp32:esp32 build
@@ -54,9 +57,9 @@ RUN cd build && \
     ./bootstrap && \
     ./configure --enable-local && \
     make && \
-    ./ct-ng xtensa-esp32s3-linux-uclibcfdpic && \
+    ./ct-ng xtensa-esp32-linux-uclibcfdpic && \
     CT_PREFIX=`pwd`/builds ./ct-ng build || echo "Completed"  # the complete ct-ng build fails but we still get what we wanted!
-RUN [ -e build/crosstool-NG/builds/xtensa-esp32s3-linux-uclibcfdpic/bin/xtensa-esp32s3-linux-uclibcfdpic-gcc ] || exit 1
+RUN [ -e build/crosstool-NG/builds/xtensa-esp32s3-linux-uclibcfdpic/bin/xtensa-esp32-linux-uclibcfdpic-gcc ] || exit 1
 
 #
 # bootloader
@@ -69,8 +72,8 @@ cmake . && \
 cd esp-idf && \
 . ./export.sh && \
 cd ../network_adapter && \
-idf.py set-target esp32s3 && \
-cp sdkconfig.defaults.esp32s3 sdkconfig && \
+idf.py set-target esp32 && \
+cp sdkconfig.defaults.esp32 sdkconfig && \
 idf.py build
 
 #
@@ -78,11 +81,11 @@ idf.py build
 #
 RUN cd build && \ 
 	git clone https://github.com/jcmvbkbc/buildroot -b xtensa-2023.08-fdpic && \
-	make -C buildroot O=`pwd`/build-buildroot-esp32s3 esp32s3_defconfig && \
-	buildroot/utils/config --file build-buildroot-esp32s3/.config --set-str TOOLCHAIN_EXTERNAL_PATH `pwd`/crosstool-NG/builds/xtensa-esp32s3-linux-uclibcfdpic && \
-	buildroot/utils/config --file build-buildroot-esp32s3/.config --set-str TOOLCHAIN_EXTERNAL_PREFIX '$(ARCH)-esp32s3-linux-uclibcfdpic' && \
-	buildroot/utils/config --file build-buildroot-esp32s3/.config --set-str TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX '$(ARCH)-esp32s3-linux-uclibcfdpic' && \
-	make -C buildroot O=`pwd`/build-buildroot-esp32s3
+	make -C buildroot O=`pwd`/build-buildroot-esp32 esp32_defconfig && \
+	buildroot/utils/config --file build-buildroot-esp32/.config --set-str TOOLCHAIN_EXTERNAL_PATH `pwd`/crosstool-NG/builds/xtensa-esp32-linux-uclibcfdpic && \
+	buildroot/utils/config --file build-buildroot-esp32/.config --set-str TOOLCHAIN_EXTERNAL_PREFIX '$(ARCH)-esp32-linux-uclibcfdpic' && \
+	buildroot/utils/config --file build-buildroot-esp32/.config --set-str TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX '$(ARCH)-esp32-linux-uclibcfdpic' && \
+	make -C buildroot O=`pwd`/build-buildroot-esp32
 
 # keep docker running so we can debug/rebuild :)
 USER root
