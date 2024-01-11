@@ -59,33 +59,38 @@ RUN cd build && \
     make && \
     ./ct-ng xtensa-esp32-linux-uclibcfdpic && \
     CT_PREFIX=`pwd`/builds ./ct-ng build || echo "Completed"  # the complete ct-ng build fails but we still get what we wanted!
-RUN [ -e build/crosstool-NG/builds/xtensa-esp32s3-linux-uclibcfdpic/bin/xtensa-esp32-linux-uclibcfdpic-gcc ] || exit 1
+RUN [ -e build/crosstool-NG/builds/xtensa-esp32-linux-uclibcfdpic/bin/xtensa-esp32-linux-uclibcfdpic-gcc ] || exit 1
 
 #
 # bootloader
 #
-ENV IDF_PATH="/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/esp-idf"
 RUN cd build && \
-git clone https://github.com/jcmvbkbc/esp-hosted -b ipc && \
-cd esp-hosted/esp_hosted_ng/esp/esp_driver && \
-cmake . && \
+git clone https://github.com/jcmvbkbc/esp-idf -b linux-5.1.2 && \
 cd esp-idf && \
+/usr/local/bin/python3 /app/build/esp-idf/tools/idf_tools.py install && \
+/usr/local/bin/python3 /app/build/esp-idf/tools/idf_tools.py install-python-env && \
 . ./export.sh && \
-cd ../network_adapter && \
+cd examples/get-started/linux_boot && \
 idf.py set-target esp32 && \
 cp sdkconfig.defaults.esp32 sdkconfig && \
 idf.py build
+
+#Project build complete. To flash, run this command:
+#/app/build/.espressif/python_env/idf5.1_py3.10_env/bin/python ../../../components/esptool_py/esptool/esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32  write_flash --flash_mode dio --flash_size 4MB --flash_freq 80m 0x1000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/linux_boot.bin
+#or run 'idf.py -p (PORT) flash'
 
 #
 # kernel and rootfs
 #
 RUN cd build && \ 
-	git clone https://github.com/jcmvbkbc/buildroot -b xtensa-2023.08-fdpic && \
-	make -C buildroot O=`pwd`/build-buildroot-esp32 esp32_defconfig && \
+	git clone https://github.com/jcmvbkbc/buildroot -b xtensa-2023.11-fdpic && \
+	cd buildroot && git pull && cd .. && \
+	mkdir build-buildroot-esp32 && \ 
+	make -C buildroot O=/app/build/build-buildroot-esp32 esp32_defconfig && \
 	buildroot/utils/config --file build-buildroot-esp32/.config --set-str TOOLCHAIN_EXTERNAL_PATH `pwd`/crosstool-NG/builds/xtensa-esp32-linux-uclibcfdpic && \
 	buildroot/utils/config --file build-buildroot-esp32/.config --set-str TOOLCHAIN_EXTERNAL_PREFIX '$(ARCH)-esp32-linux-uclibcfdpic' && \
 	buildroot/utils/config --file build-buildroot-esp32/.config --set-str TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX '$(ARCH)-esp32-linux-uclibcfdpic' && \
-	make -C buildroot O=`pwd`/build-buildroot-esp32
+	make -C buildroot O=/app/build/build-buildroot-esp32
 
 # keep docker running so we can debug/rebuild :)
 USER root
