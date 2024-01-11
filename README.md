@@ -1,4 +1,6 @@
-# Build the ESP32-S3 Linux Kernel
+# Build the ESP32 Linux Kernel
+
+**PAY ATTENTION:** IF YOUR ESP32's CHIP IS NOT IN REVISION v3.00 TO v3.9 DO NOT FLASH OR YOU WILL **BRICK** YOUR DEVICE!!!
 
 Based on the [Max Filippov ESP32-S3 Kernel Linux Build Scripts](https://github.com/jcmvbkbc/esp32-linux-build) and the [Antonio Docker Container](https://github.com/hpsaturn/esp32s3-linux) with a few modifications to make it work for me.
 
@@ -12,12 +14,12 @@ Check [This Wiki Page](http://wiki.osll.ru/doku.php/etc:users:jcmvbkbc:linux-xte
 ## Build Instructions
 
 ```text
-sudo docker build -t esp32s3-linux .
+sudo docker build -t esp32-linux .
 ```
 
-Build time lasts for around an hour to be completed, you will have a 20GB docker image with the binaries needed to flash the ESP32.
+Build time lasts for around an hour to be completed, you will have a ~23GB docker image with the binaries needed to flash the ESP32.
 
-Identify in your computer where is the serial port to the ESP32-S3, I will suppose it will by `/dev/ttyACM0`:
+Identify in your computer where is the serial port to the ESP32, I will suppose it will by `/dev/ttyACM0`:
 
 ```text
 # give device access (ownership) to you current user
@@ -27,16 +29,15 @@ sudo chown $USER /dev/ttyACM0
 Mount a container with the image you have just built from Dockerfile:
 
 ```text
-sudo docker run -it esp32s3-linux
+sudo docker run -it esp32-linux
 ```
 
 Copy the container ID (let us suppose it is `78bdc7c38626`) and copy the generated binaries to your native environment:
 
 ```text
-sudo docker cp 78bdc7c38626:/app/build/build-buildroot-esp32s3/images/ .
-sudo docker cp 78bdc7c38626:/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/network_adapter.bin ./images
-sudo docker cp 78bdc7c38626:/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/bootloader/bootloader.bin ./images
-sudo docker cp 78bdc7c38626:/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/partition_table/partition-table.bin ./images
+sudo docker cp 78bdc7c38626:/app/build/esp-idf/examples/get-started/linux_boot:.
+sudo docker cp 78bdc7c38626:build-buildroot-esp32/images/xipImage:./build
+sudo docker cp 78bdc7c38626:build-buildroot-esp32/images/rootfs.cramfs:./build
 ```
 
 You may now delete the docker image and container, you won't need it anymore (if you don't want to cross compile any application).
@@ -53,13 +54,13 @@ Activate `esp-idf` environment wherever it have been installed, I will suppose i
 . /opt/esp-idf/export.sh
 ```
 
-Then navigate to `images` folder and run:
+Then navigate to `build` folder and run:
 
 ```text
-esptool.py --chip esp32s3 -p /dev/ttyACM0 -b 921600 --before=default_reset --after=hard_reset write_flash 0x0 bootloader.bin 0x10000 network_adapter.bin 0x8000 partition-table.bin
-parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name linux  --input xipImage
-parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name rootfs --input rootfs.cramfs
-parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name etc --input etc.jffs2
+cd build
+esptool.py --chip esp32 -p /dev/ttyACM0 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size 4MB 0x1000 bootloader/bootloader.bin 0x10000 linux_boot.bin 0x8000 partition_table/partition-table.bin
+parttool.py 460800 write_partition --partition-name linux  --input xipImage
+parttool.py 460800 write_partition --partition-name rootfs --input rootfs.cramfs
 ```
 
 ### Second Method
@@ -69,23 +70,26 @@ This method installs `esp-idf` inside docker container, it will requires to pass
 Supposing your USB to UART adapter is listed in your PC as `/dev/ttyACM0`, run the docker image giving access to it:
 
 ```text
-sudo docker run --device=/dev/ttyACM0 -it esp32s3-linux
+sudo docker run --device=/dev/ttyACM0 -it esp32-linux
 ```
 
-Install `esp-idf` inside the container, then activate the environment:
+Give device permission to user `esp32`, change user and activate `esp-idf` inside the container:
 
 ```text
-/app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/esp-idf/install.sh
-source /app/build/esp-hosted/esp_hosted_ng/esp/esp_driver/esp-idf/export.sh
+chown esp32 /dev/ttyACM0
+su esp32
+cd build/esp-idf
+source export.sh
 ```
 
 Then flash the images:
 
 ```text
-esptool.py --chip esp32s3 -p /dev/ttyACM0 -b 921600 --before=default_reset --after=hard_reset write_flash 0x0 ./build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/bootloader/bootloader.bin 0x10000 ./build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/network_adapter.bin 0x8000 ./build/esp-hosted/esp_hosted_ng/esp/esp_driver/network_adapter/build/partition_table/partition-table.bin
-parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name linux  --input ./build/build-buildroot-esp32s3/images/xipImage
-parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name rootfs --input ./build/build-buildroot-esp32s3/images/rootfs.cramfs
-parttool.py -p /dev/ttyACM0 -b 921600 write_partition --partition-name etc --input ./build/build-buildroot-esp32s3/images/etc.jffs2
+cd examples/get-started/linux_boot/build
+esptool.py --chip esp32 -p /dev/ttyACM0 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size 4MB 0x1000 bootloader/bootloader.bin 0x10000 linux_boot.bin 0x8000 partition_table/partition-table.bin
+cd /app/build/build-buildroot-esp32/images/
+parttool.py 460800 write_partition --partition-name linux  --input xipImage
+parttool.py 460800 write_partition --partition-name rootfs --input rootfs.cramfs
 ```
 
 ### Access Linux Shell from UART adapter
@@ -96,4 +100,4 @@ You will be able to access shell through serial monitor, you can use any applica
 minicom -D /dev/ttyACM0 -b 115200
 ```
 
-press `RST` button on ESP32-S3 and enjoy!
+press `RST` button on ESP32 and enjoy!
