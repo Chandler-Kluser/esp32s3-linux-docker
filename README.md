@@ -1,4 +1,6 @@
-# Build the ESP32-S3 Linux Kernel
+# Build the ESP32 and ESP32-S3 Linux Kernel
+
+**FOR ESP32 SWITCH TO ESP32 BRANCH!!!**
 
 Based on the [Max Filippov ESP32-S3 Kernel Linux Build Scripts](https://github.com/jcmvbkbc/esp32-linux-build) and the [Antonio Docker Container](https://github.com/hpsaturn/esp32s3-linux) with a few modifications to make it work for me.
 
