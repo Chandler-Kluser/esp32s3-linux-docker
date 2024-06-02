@@ -77,7 +77,7 @@ idf.py build
 # kernel and rootfs
 #
 RUN cd build && \ 
-	git clone https://github.com/jcmvbkbc/buildroot -b xtensa-2023.08-fdpic && \
+	git clone https://github.com/jcmvbkbc/buildroot -b xtensa-2024.02-fdpic && \
 	make -C buildroot O=`pwd`/build-buildroot-esp32s3 esp32s3_defconfig && \
 	buildroot/utils/config --file build-buildroot-esp32s3/.config --set-str TOOLCHAIN_EXTERNAL_PATH `pwd`/crosstool-NG/builds/xtensa-esp32s3-linux-uclibcfdpic && \
 	buildroot/utils/config --file build-buildroot-esp32s3/.config --set-str TOOLCHAIN_EXTERNAL_PREFIX '$(ARCH)-esp32s3-linux-uclibcfdpic' && \
